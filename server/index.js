@@ -36,28 +36,49 @@ app.post('/api/register',(req,res)=>{
 })
 
 app.post('/api/ProfileForm', (req, res) => {
-    console.log(req.body);
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-        status: "data received",
+    console.log(req.body); 
+
+    const {
+        name,
+        email,
+        phoneNumber,
+        fatherPhoneNumber,
+        motherPhoneNumber,
+        aadharCard,
+        address,
+        age
+    } = req.body;
+
+    let profileQuery = `INSERT INTO user_details (
+        name, email, phone_number, father_phone_number, mother_phone_number, aadhar_card, address, age
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    pool.query(profileQuery, [
+        name,
+        email,
+        phoneNumber,
+        fatherPhoneNumber,
+        motherPhoneNumber,
+        aadharCard,
+        address,
+        age
+    ], (error, result) => {
+        if (error) {
+            console.log("Error occurred in inserting", error);
+            return res.status(500).json({
+                status: "Error",
+                message: "Error inserting data"
+            });
+        } else {
+            console.log(`Data inserted affected: ${result.affectedRows} rows`);
+            res.json({
+                status: "data received",
+                message: "Data successfully inserted"
+            });
+        }
     });
-    let profilequery = 'INSERT INTO  user_profiles (reg_id ,user_email,firstname,dob,degree,department,phone_number,address) VALUES ( ?,?,?,?,?,?,?,?)'
-    pool.query(profilequery ,[req.body.reg,
-        req.body.email,
-        req.body.name,
-        req.body.dob,
-        req.body.degree,
-        req.body.department,
-        req.body.phoneNumber,
-        req.body.adress],(error,result)=>{
-            if(error){
-                console.log("error occured in inserting",error);
-                return;
-            }else{
-                console.log(`data inserted affected :`+result.affectedRows+'rows');
-            }
-        });
 });
+
 
 app.post('/api/StudentProfile',(req,res)=>{
     let details = `SELECT * FROM student_profiles`;
@@ -119,6 +140,80 @@ app.post('/api/login',(req,res)=>{
     })
     
 })
+app.post('/api/geolocation', (req, res) => {
+    const { latitude, longitude, email } = req.body;
+
+    console.log(latitude,longitude,email)
+
+    if (typeof latitude !== 'number' || typeof longitude !== 'number' || typeof email !== 'string') {
+        return res.status(400).json({ "status": "Error", "message": "Invalid data" });
+    }
+
+    let query = 'INSERT INTO geolocations (latitude, longitude, email) VALUES (?, ?, ?)';
+
+    pool.query(query, [latitude, longitude, email], (error, result) => {
+        if (error) {
+            console.log("Error occurred while inserting:", error);
+            return res.status(500).json({ "status": "Error", "message": "Error inserting data" });
+        } else {
+            console.log(`Data inserted, affected rows: ${result.affectedRows}`);
+            return res.json({ "status": "Location saved successfully" });
+        }
+    });
+});
+app.get('/api/geolocations', (req, res) => {
+    const geolocationsQuery = 'SELECT * FROM geolocations ORDER BY timestamp DESC';
+    const userDetailsQuery = 'SELECT * FROM user_details';
+
+    // First query to fetch geolocations
+    pool.query(geolocationsQuery, (error1, geolocationsResults) => {
+        if (error1) {
+            console.log("Error occurred while fetching geolocations:", error1);
+            return res.status(500).json({ "status": "Error", "message": "Error fetching geolocations" });
+        }
+
+        // Second query to fetch all user details
+        pool.query(userDetailsQuery, (error2, userDetailsResults) => {
+            if (error2) {
+                console.log("Error occurred while fetching user details:", error2);
+                return res.status(500).json({ "status": "Error", "message": "Error fetching user details" });
+            }
+
+            // Create a map to associate users by their email
+            const userMap = new Map();
+            userDetailsResults.forEach(user => {
+                userMap.set(user.email, user);
+            });
+
+            // Combine geolocations with their corresponding user details
+            const combinedResults = geolocationsResults.map(geo => {
+                const user = userMap.get(geo.email);
+                if (user) {
+                    return {
+                        ...geo,
+                        ...user,
+                        timestamp: new Date(geo.timestamp).toLocaleString(),
+                        created_at: new Date(user.created_at).toLocaleString(),
+                        updated_at: new Date(user.updated_at).toLocaleString(),
+                    };
+                } else {
+                    return {
+                        ...geo,
+                        timestamp: new Date(geo.timestamp).toLocaleString(),
+                    };
+                }
+            });
+
+            // Send combined data in the response
+            res.json({
+                combinedData: combinedResults
+            });
+        });
+    });
+});
+
+
+
 
 function senddata(att){
     app.get('/api/home',(req,res)=>{

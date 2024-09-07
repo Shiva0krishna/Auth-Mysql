@@ -5,6 +5,7 @@ export default function Navbar() {
     <div>
         <nav style={{width:"100vw" ,
                     height :"7vh",
+                    padding :"10px ",
                     display:"flex",
                     flexDirection:"row",
                     alignItems:'center',
@@ -15,7 +16,7 @@ export default function Navbar() {
                     color:'whitesmoke',
                     boxShadow:"2px 2px 5px 5px lightgrey",
                      }}>
-            <a href='/StudentProfile'style={{color:"whitesmoke",textDecoration:'none'}}>Student Profile</a>
+            <a href='/StudentProfile'style={{color:"whitesmoke",textDecoration:'none', fontSize:"24px"}}>Secure Her</a>
             <a href='/login'style={{color:"whitesmoke",textDecoration:'none'}}>Login</a>
             <a href='/register' style={{color:"whitesmoke",textDecoration:'none'}}>Register</a>
             <a href='/ProfileForm' style={{color:"whitesmoke",textDecoration:'none'}}>ProfileForm</a>
